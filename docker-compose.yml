@@ -1,0 +1,71 @@
+services:
+
+  post-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "50052:50052"
+    env_file:
+      - .env
+    networks:
+      - post-service-networks
+    depends_on:
+      migration: 
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  migration:
+    image: ghcr.io/kukymbr/goose-docker:3.24.2
+    env_file:
+      - .env
+    environment:
+      - GOOSE_DRIVER=postgres
+      - GOOSE_DBSTRING=host=postgres port=5432 user=${DB_USER} password=${DB_PASSWORD} dbname=${DB_NAME}
+      - GOOSE_VERBOSE=true
+    networks:
+      - post-service-networks
+    depends_on:
+      postgres:
+       condition: service_healthy
+    restart: on-failure
+    volumes:
+      - ./db/migrations:/migrations
+
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    networks:
+      - post-service-networks
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  pgadmin: 
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - "5051:80"
+    networks:
+      - post-service-networks
+    depends_on:
+      postgres :
+        condition: service_healthy
+
+networks:
+  post-service-networks:
+    driver: bridge
+
+volumes:
+  postgres-data:
