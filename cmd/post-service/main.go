@@ -12,7 +12,7 @@ import (
 	"github.com/Nucleussss/hikayat-forum/post/internal/repository/postgres"
 	"github.com/Nucleussss/hikayat-forum/post/internal/service"
 
-	pb "github.com/Nucleussss/hikayat-forum/post/api/post/v1"
+	postpb "github.com/Nucleussss/hikayat-proto/gen/go/post/v1"
 )
 
 func main() {
@@ -35,13 +35,13 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 
-	pb.RegisterPostServiceServer(grpcServer, postHandler)
+	postpb.RegisterPostServiceServer(grpcServer, postHandler)
 
-	lis, err := net.Listen("tcp", ":"+os.Getenv("GRPC_PORT"))
+	lis, err := net.Listen("tcp", ":"+os.Getenv("POST_GRPC_PORT"))
 	if err != nil {
-		log.Fatalf("failed to listen on port %s : %v", os.Getenv("GRPC_PORT"), err)
+		log.Fatalf("failed to listen on port %s : %v", os.Getenv("POST_GRPC_PORT"), err)
 	}
-	log.Printf("Starting gRPC server at %s\n", os.Getenv("GRPC_PORT"))
+	log.Printf("Starting gRPC server at %s\n", os.Getenv("POST_GRPC_PORT"))
 
 	// gracefull shoutdown
 	sigChan := make(chan os.Signal, 1)

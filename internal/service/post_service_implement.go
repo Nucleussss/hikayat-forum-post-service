@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	pb "github.com/Nucleussss/hikayat-forum/post/api/post/v1"
 	"github.com/Nucleussss/hikayat-forum/post/internal/repository"
+	postpb "github.com/Nucleussss/hikayat-proto/gen/go/post/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -18,7 +18,7 @@ func NewPostService(postRepo repository.PostRepoInterface) PostServiceInterface 
 	return &PostService{postRepo: postRepo}
 }
 
-func (s *PostService) CreatePost(ctx context.Context, req *pb.CreatePostRequest) (*pb.Post, error) {
+func (s *PostService) CreatePost(ctx context.Context, req *postpb.CreatePostRequest) (*postpb.Post, error) {
 	op := "service.CreatePost"
 	post, err := s.postRepo.CreatePost(ctx, req)
 	if err != nil {
@@ -30,7 +30,7 @@ func (s *PostService) CreatePost(ctx context.Context, req *pb.CreatePostRequest)
 	return post, nil
 }
 
-func (s *PostService) GetPost(ctx context.Context, req *pb.GetPostRequest) (*pb.Post, error) {
+func (s *PostService) GetPost(ctx context.Context, req *postpb.GetPostRequest) (*postpb.Post, error) {
 	op := "service.GetPost"
 	post, err := s.postRepo.GetPost(ctx, req.Id)
 	if err != nil {
@@ -42,7 +42,7 @@ func (s *PostService) GetPost(ctx context.Context, req *pb.GetPostRequest) (*pb.
 	return post, nil
 }
 
-func (s *PostService) ListPosts(ctx context.Context, req *pb.ListPostsRequest) (*pb.ListPostsResponse, error) {
+func (s *PostService) ListPosts(ctx context.Context, req *postpb.ListPostsRequest) (*postpb.ListPostsResponse, error) {
 	op := "service.ListPosts"
 	list, err := s.postRepo.ListPosts(ctx, req)
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *PostService) ListPosts(ctx context.Context, req *pb.ListPostsRequest) (
 	return list, nil
 }
 
-func (s *PostService) UpdatePost(ctx context.Context, req *pb.UpdatePostRequest) (*pb.Post, error) {
+func (s *PostService) UpdatePost(ctx context.Context, req *postpb.UpdatePostRequest) (*postpb.Post, error) {
 	op := "service.UpdatePost"
 
 	// validate fieldmask
@@ -70,6 +70,12 @@ func (s *PostService) UpdatePost(ctx context.Context, req *pb.UpdatePostRequest)
 	if err != nil {
 		log.Printf("%s Error getting post to update: %v", op, err)
 		return nil, status.Error(codes.Internal, " Failed to get post")
+	}
+
+	// check if user is authorized to update the post
+	if post.AuthorId != req.AuthorId {
+		log.Printf("Unauthorized to update post")
+		return nil, status.Error(codes.PermissionDenied, "Unauthorized to update post")
 	}
 
 	// update post fields based on fieldmask
@@ -85,7 +91,7 @@ func (s *PostService) UpdatePost(ctx context.Context, req *pb.UpdatePostRequest)
 	}
 
 	// create new update request with updated fields and fieldmask
-	newReq := &pb.UpdatePostRequest{
+	newReq := &postpb.UpdatePostRequest{
 		Id:         req.Id,
 		Post:       post,
 		UpdateMask: req.UpdateMask,
@@ -101,11 +107,22 @@ func (s *PostService) UpdatePost(ctx context.Context, req *pb.UpdatePostRequest)
 	return postUpdate, nil
 }
 
-func (s *PostService) DeletePost(ctx context.Context, req *pb.DeletePostRequest) error {
+func (s *PostService) DeletePost(ctx context.Context, req *postpb.DeletePostRequest) error {
 	op := "service.DeletePost"
 
-	err := s.postRepo.DeletePost(ctx, req.Id)
+	post, err := s.postRepo.GetPost(ctx, req.Id)
 	if err != nil {
+		log.Printf("%s Error get post: %v", op, err)
+		return status.Error(codes.Internal, "Failed to get post")
+	}
+
+	// check if user is authorized to delete the post
+	if post.AuthorId != req.AuthorId {
+		log.Printf("%s Unauthorized to delete post: %v", op, err)
+		return status.Errorf(codes.PermissionDenied, "Unauthorized to delete post")
+	}
+
+	if err := s.postRepo.DeletePost(ctx, req.Id); err != nil {
 		log.Printf("%s Error deleting post: %v", op, err)
 		return status.Error(codes.Internal, "Failed to delete post")
 	}

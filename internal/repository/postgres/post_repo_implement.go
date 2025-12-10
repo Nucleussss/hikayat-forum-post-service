@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"log"
 
-	pb "github.com/Nucleussss/hikayat-forum/post/api/post/v1"
+	postpb "github.com/Nucleussss/hikayat-proto/gen/go/post/v1"
+
 	"github.com/Nucleussss/hikayat-forum/post/internal/models"
 	"github.com/Nucleussss/hikayat-forum/post/internal/repository"
 	"github.com/Nucleussss/hikayat-forum/post/pkg/utils"
@@ -28,7 +29,7 @@ func NewPostRepo(pool *pgxpool.Pool) repository.PostRepoInterface {
 	return &PostRepo{pool: pool}
 }
 
-func (r *PostRepo) CreatePost(ctx context.Context, req *pb.CreatePostRequest) (*pb.Post, error) {
+func (r *PostRepo) CreatePost(ctx context.Context, req *postpb.CreatePostRequest) (*postpb.Post, error) {
 	query := `
 		INSERT INTO posts(title, content, author_id, category, is_deleted) 
 		VALUES($1, $2 ,$3 ,$4,false)
@@ -52,12 +53,12 @@ func (r *PostRepo) CreatePost(ctx context.Context, req *pb.CreatePostRequest) (*
 		return nil, err
 	}
 
-	pbPost := utils.PostModelToPB(post)
+	postpbPost := utils.PostModelToPB(post)
 
-	return pbPost, nil
+	return postpbPost, nil
 }
 
-func (r *PostRepo) GetPost(ctx context.Context, id string) (*pb.Post, error) {
+func (r *PostRepo) GetPost(ctx context.Context, id string) (*postpb.Post, error) {
 	query := `
 		SELECT id, title, content, author_id, category, created_at, updated_at, is_deleted
 		FROM posts 
@@ -86,11 +87,11 @@ func (r *PostRepo) GetPost(ctx context.Context, id string) (*pb.Post, error) {
 
 	log.Printf("Post retrieved successfully: %v", post)
 
-	pbPost := utils.PostModelToPB(post)
-	return pbPost, nil
+	postpbPost := utils.PostModelToPB(post)
+	return postpbPost, nil
 }
 
-func (r *PostRepo) ListPosts(ctx context.Context, req *pb.ListPostsRequest) (*pb.ListPostsResponse, error) {
+func (r *PostRepo) ListPosts(ctx context.Context, req *postpb.ListPostsRequest) (*postpb.ListPostsResponse, error) {
 	query := `
 		 SELECT id, title, content, author_id, category, created_at, updated_at, is_deleted
 		 FROM posts
@@ -181,20 +182,20 @@ func (r *PostRepo) ListPosts(ctx context.Context, req *pb.ListPostsRequest) (*pb
 		hasMore = true
 	}
 
-	pbPosts := make([]*pb.Post, 0, len(posts))
+	postpbPosts := make([]*postpb.Post, 0, len(posts))
 	for _, post := range posts {
-		pbPosts = append(pbPosts, utils.PostModelToPB(post))
+		postpbPosts = append(postpbPosts, utils.PostModelToPB(post))
 	}
 
-	response := &pb.ListPostsResponse{
-		Posts:   pbPosts,
+	response := &postpb.ListPostsResponse{
+		Posts:   postpbPosts,
 		HasMore: hasMore,
 	}
 
 	return response, nil
 }
 
-func (r *PostRepo) UpdatePost(ctx context.Context, req *pb.UpdatePostRequest) (*pb.Post, error) {
+func (r *PostRepo) UpdatePost(ctx context.Context, req *postpb.UpdatePostRequest) (*postpb.Post, error) {
 	query := `
 		UPDATE posts
 		SET 

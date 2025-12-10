@@ -1,17 +1,18 @@
 package utils
 
 import (
-	pb "github.com/Nucleussss/hikayat-forum/post/api/post/v1"
 	"github.com/Nucleussss/hikayat-forum/post/internal/models"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	postpb "github.com/Nucleussss/hikayat-proto/gen/go/post/v1"
 )
 
-func PostModelToPB(p *models.Post) *pb.Post {
+func PostModelToPB(p *models.Post) *postpb.Post {
 	if p == nil {
 		return nil
 	}
 
-	return &pb.Post{
+	return &postpb.Post{
 		Id:       p.ID.String(),
 		Title:    p.Title,
 		Content:  p.Content,

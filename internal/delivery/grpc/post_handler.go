@@ -4,15 +4,16 @@ import (
 	"context"
 	"log"
 
-	pb "github.com/Nucleussss/hikayat-forum/post/api/post/v1"
 	"github.com/Nucleussss/hikayat-forum/post/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	postpb "github.com/Nucleussss/hikayat-proto/gen/go/post/v1"
 )
 
 type PostHandler struct {
-	pb.UnimplementedPostServiceServer
+	postpb.UnimplementedPostServiceServer
 	postService service.PostServiceInterface
 }
 
@@ -20,7 +21,7 @@ func NewPostHandler(postService service.PostServiceInterface) *PostHandler {
 	return &PostHandler{postService: postService}
 }
 
-func (h *PostHandler) CreatePost(ctx context.Context, req *pb.CreatePostRequest) (*pb.Post, error) {
+func (h *PostHandler) CreatePost(ctx context.Context, req *postpb.CreatePostRequest) (*postpb.Post, error) {
 	op := "grpc.PostHandler.CreatePost"
 	post, err := h.postService.CreatePost(ctx, req)
 	if err != nil {
@@ -31,7 +32,7 @@ func (h *PostHandler) CreatePost(ctx context.Context, req *pb.CreatePostRequest)
 	return post, nil
 }
 
-func (h *PostHandler) GetPost(ctx context.Context, req *pb.GetPostRequest) (*pb.Post, error) {
+func (h *PostHandler) GetPost(ctx context.Context, req *postpb.GetPostRequest) (*postpb.Post, error) {
 	op := "grpc.PostHandler.UpdatePost"
 	post, err := h.postService.GetPost(ctx, req)
 	if err != nil {
@@ -42,7 +43,7 @@ func (h *PostHandler) GetPost(ctx context.Context, req *pb.GetPostRequest) (*pb.
 	return post, nil
 }
 
-func (h *PostHandler) ListPosts(ctx context.Context, req *pb.ListPostsRequest) (*pb.ListPostsResponse, error) {
+func (h *PostHandler) ListPosts(ctx context.Context, req *postpb.ListPostsRequest) (*postpb.ListPostsResponse, error) {
 	op := "grpc.PostHandler.ListPost"
 	posts, err := h.postService.ListPosts(ctx, req)
 	if err != nil {
@@ -53,7 +54,7 @@ func (h *PostHandler) ListPosts(ctx context.Context, req *pb.ListPostsRequest) (
 	return posts, nil
 }
 
-func (h *PostHandler) UpdatePost(ctx context.Context, req *pb.UpdatePostRequest) (*pb.Post, error) {
+func (h *PostHandler) UpdatePost(ctx context.Context, req *postpb.UpdatePostRequest) (*postpb.Post, error) {
 	op := "grpc.PostHandler.UpdatePost"
 
 	post, err := h.postService.UpdatePost(ctx, req)
@@ -65,8 +66,11 @@ func (h *PostHandler) UpdatePost(ctx context.Context, req *pb.UpdatePostRequest)
 	return post, nil
 }
 
-func (h *PostHandler) DeletePost(ctx context.Context, req *pb.DeletePostRequest) (*emptypb.Empty, error) {
+func (h *PostHandler) DeletePost(ctx context.Context, req *postpb.DeletePostRequest) (*emptypb.Empty, error) {
 	op := "grpc.PostHandler.DeletePost"
+
+	
+
 	err := h.postService.DeletePost(ctx, req)
 	if err != nil {
 		log.Printf("%s Error deleting post: %v", op, err)
